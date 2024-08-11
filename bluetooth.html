@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bluetooth Finder</title>
+	<style>
+		.search-animator {
+			display: none;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 24px;
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+	<h1>Bluetooth Finder</h1>
+	<button id="bluetooth-on-btn">Turn On Bluetooth</button>
+	<button id="find-btn">Find Devices</button>
+	<ul id="device-list"></ul>
+	<button id="connect-btn">Connect</button>
+	<div id="status"></div>
+	<div class="search-animator">Searching for devices...</div>
+	<script>
+		if ('bluetooth' in navigator) {
+			document.getElementById('bluetooth-on-btn').addEventListener('click', () => {
+				navigator.bluetooth.requestPermission()
+					.then((granted) => {
+						if (granted) {
+							console.log('Bluetooth permission granted');
+							navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+								.then((device) => {
+									console.log(`Selected device: ${device.name}`);
+								})
+								.catch((error) => {
+									console.error('Error selecting device:', error);
+								});
+						} else {
+							console.log('Bluetooth permission denied');
+						}
+					})
+					.catch((error) => {
+						console.error('Error requesting Bluetooth permission:', error);
+					});
+			});
+
+			document.getElementById('find-btn').addEventListener('click', () => {
+				const searchAnimator = document.querySelector('.search-animator');
+				searchAnimator.style.display = 'block';
+				navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+					.then((device) => {
+						console.log(`Found device: ${device.name}`);
+						const deviceList = document.getElementById('device-list');
+						const listItem = document.createElement('li');
+						listItem.textContent = device.name;
+						deviceList.appendChild(listItem);
+						searchAnimator.style.display = 'none';
+					})
+					.catch((error) => {
+						console.error('Error finding devices:', error);
+						searchAnimator.style.display = 'none';
+					});
+			});
+
+			document.getElementById('connect-btn').addEventListener('click', () => {
+				const deviceList = document.getElementById('device-list');
+				const deviceName = deviceList.children[0].textContent;
+				navigator.bluetooth.requestDevice({ filters: [{ name: deviceName }] })
+					.then((device) => {
+						console.log(`Connected to device: ${device.name}`);
+						return device.gatt.connect();
+					})
+					.then((server) => {
+						console.log('Connected to GATT server');
+					})
+					.catch((error) => {
+						console.error('Error connecting to device:', error);
+					});
+			});
+		} else {
+			console.log('Web Bluetooth API not supported');
+		}
+	</script>
+</body>
+</html>
